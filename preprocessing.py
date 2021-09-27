@@ -34,8 +34,8 @@ class Preprocessor:
 
     def process(self, observation):
         # processes a pil image
-        #tensor = self.transformer(self.to_pil(observation))
+        tensor = self.transformer(self.to_pil(observation))
         state = np.array(observation)
         state = state.transpose((2, 0, 1))
         state = torch.from_numpy(state)
-        return state.unsqueeze(0)
+        return state.unsqueeze(0).type(torch.FloatTensor)

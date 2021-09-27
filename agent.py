@@ -34,8 +34,8 @@ class TennisAgent:
         self.discount_factor = discount_factor
 
         # neural networks to utilize
-        self.target_network = DQN(num_channels, num_actions)
-        self.policy_network = DQN(num_channels, num_actions)
+        self.target_network = DQN(height, width, num_channels, num_actions)
+        self.policy_network = DQN(height, width, num_channels, num_actions)
 
         # optimizing
         self.optimizer = optim.RMSprop(self.policy_network.parameters())
@@ -66,6 +66,7 @@ class TennisAgent:
         return self.replay_buffer.sample(self.batch_size)
 
     def train(self):
+        print("Training")
         # optimize model
         # get random minibatch
         # check minibatch if there are enough elements
@@ -89,7 +90,7 @@ class TennisAgent:
         state_batch = torch.cat(batch.state).to(self.device)
         action_batch = torch.cat(actions)
         reward_batch = torch.cat(rewards)
-
+        state_batch.type(torch.ByteTensor)
         state_action_values = self.policy_network(state_batch).gather(1, action_batch)
 
         next_state_values = torch.zeros(self.batch_size, device=self.device)

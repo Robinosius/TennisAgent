@@ -43,6 +43,7 @@ for episode in range(num_episodes):
 
         # store transition (converts reward to tensor as well)
         agent.memorize(_obs, action, reward, _new_obs)
+
         # train agent with random minibatch
         steps += 1
         agent.train()
