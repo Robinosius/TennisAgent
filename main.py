@@ -5,18 +5,18 @@ from agent import *
 
 from torch import FloatTensor
 
+# load training data from files or create new ones
+
 # BASIC TRAINING ALGORITHM IMPLEMENTATION
-
 env = gym.make("Tennis-v4")
-
 height, width, num_channels = env.observation_space.shape
 
 num_actions = 7
 buffer_size = 100000
-batch_size = 4
-learning_rate = 1
+batch_size = 32
+learning_rate = 1e-4
 epsilon = 1
-discount_factor = 1
+discount_factor = 0.99
 
 # center crop processor
 processor = Preprocessor(84)
@@ -25,8 +25,7 @@ agent = TennisAgent(84, 84, num_channels, num_actions, buffer_size, batch_size,
                     learning_rate, epsilon, discount_factor)
 
 # Training params:
-num_episodes = 9999
-batch_size = 32
+num_episodes = 1
 
 for episode in range(num_episodes):
     # init sequence s = perception and preprocess
@@ -36,6 +35,7 @@ for episode in range(num_episodes):
     steps = 0
     done = False
     while not done:
+        print(steps)
         # select action with epsilon greedy
         action = agent.eps_greedy_selection(_obs)
         # execute action on environment and get next state/observation
@@ -49,6 +49,10 @@ for episode in range(num_episodes):
         # train agent with random minibatch
         steps += 1
         agent.train()
+        steps += 1
+
+agent.store_params("./test.pt")
+print("Done with training.")
 
 if __name__ == "__main__":
     # prepare environment

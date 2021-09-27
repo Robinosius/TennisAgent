@@ -4,14 +4,13 @@ from replay_buffer import *
 import random
 import torch
 from torch import optim, FloatTensor, LongTensor
-from torch.autograd import Variable
-import numpy as np
+import csv
 
 
 class TennisAgent:
 
     def __init__(self, height, width, num_channels, num_actions, buffer_size, batch_size,
-                 learning_rate, epsilon, discount_factor):
+                 learning_rate, epsilon, discount_factor, filepath=None):
         super().__init__()
         self.random = random
         random.seed()
@@ -34,12 +33,21 @@ class TennisAgent:
         self.discount_factor = discount_factor
 
         # neural networks to utilize
-        self.target_network = DQN(height, width, num_channels, num_actions)
         self.policy_network = DQN(height, width, num_channels, num_actions)
+        self.target_network = DQN(height, width, num_channels, num_actions)
+
+        # load pretrained data if available
+        if filepath:
+            pretrained_data = torch.load(filepath)
+            self.policy_network.load_state_dict(pretrained_data)
+
+        # initialize target network with values of policy network
+        self.target_network.load_state_dict(self.policy_network.state_dict())
 
         # optimizing
         self.optimizer = optim.RMSprop(self.policy_network.parameters())
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 
     def eps_greedy_selection(self, observation):
         # get random number btw. 0 and 1
@@ -66,7 +74,6 @@ class TennisAgent:
         return self.replay_buffer.sample(self.batch_size)
 
     def train(self):
-        print("Training")
         # optimize model
         # get random minibatch
         # check minibatch if there are enough elements
@@ -107,5 +114,4 @@ class TennisAgent:
         return
 
     def store_params(self, filepath):
-        torch.save(self.target_network.state_dict(), filepath)
         torch.save(self.policy_network.state_dict(), filepath)
