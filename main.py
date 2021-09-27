@@ -10,17 +10,19 @@ from torch import FloatTensor
 env = gym.make("Tennis-v4")
 
 height, width, num_channels = env.observation_space.shape
-num_actions = 1
+
+num_actions = 7
 buffer_size = 100000
 batch_size = 4
 learning_rate = 1
 epsilon = 1
 discount_factor = 1
 
-agent = TennisAgent(height, width, num_channels, num_actions, buffer_size, batch_size,
-                    learning_rate, epsilon, discount_factor)
-
+# center crop processor
 processor = Preprocessor(84)
+
+agent = TennisAgent(84, 84, num_channels, num_actions, buffer_size, batch_size,
+                    learning_rate, epsilon, discount_factor)
 
 # Training params:
 num_episodes = 9999

@@ -10,11 +10,12 @@ import torch
 
 
 class Preprocessor:
-    def __init__(self, size, to_grayscale=True, num_output_channels=1):
+    def __init__(self, size, to_grayscale=False, num_output_channels=1):
         self.size = size
         self.to_grayscale = to_grayscale
         self.num_output_channels = num_output_channels
 
+        # transformer function for pil images
         if to_grayscale:
             self.transformer = T.Compose([
                 T.Grayscale(num_output_channels=self.num_output_channels),
@@ -34,8 +35,8 @@ class Preprocessor:
 
     def process(self, observation):
         # processes a pil image
-        tensor = self.transformer(self.to_pil(observation))
-        state = np.array(observation)
+        cropped = self.transformer(self.to_pil(observation))
+        state = np.array(cropped)
         state = state.transpose((2, 0, 1))
         state = torch.from_numpy(state)
         return state.unsqueeze(0).type(torch.FloatTensor)

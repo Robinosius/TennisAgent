@@ -14,6 +14,7 @@ class DQN(nn.Module):
         self.conv3 = nn.Conv2d(64, 64, kernel_size=3, stride=1)
 
         # calculate number of connections needed for fully connected layers
+        # enables variable input image sizes
         def conv2d_size_out(size, kernel_size=5, stride=2):
             return (size - (kernel_size - 1) - 1) // stride + 1
 
