@@ -77,9 +77,11 @@ for episode in range(num_episodes):
     if update:
         agent.update_target_network()
 
-    steps_total += steps
-    episode_lengths.append(steps)
-    episode_rewards.append(episode_reward)
+    # steps are equal to 0 if max steps has been surpassed
+    if steps > 0:
+        steps_total += steps
+        episode_lengths.append(steps)
+        episode_rewards.append(episode_reward)
 
     print(
         f"Episode {episode} length: {steps} mean length: {np.mean(episode_lengths)} reward: {episode_reward} mean reward: {np.mean(episode_rewards)} total step count: {steps_total}")
