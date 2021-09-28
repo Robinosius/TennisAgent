@@ -10,7 +10,7 @@ from torch import optim, FloatTensor, LongTensor
 
 class PlayingAgent:
 
-    def __init__(self, height, width, num_channels, num_actions, filepath):
+    def __init__(self, height, width, num_channels, num_actions, filepath, cpu=True):
         # dimensions of observation space
         self.height = height
         self.width = width
@@ -23,7 +23,13 @@ class PlayingAgent:
         self.policy_network = DQN(height, width, num_channels, num_actions)
 
         # load pretrained data if available
-        pretrained_data = torch.load(filepath)
+        if cpu:
+            pretrained_data = torch.load(filepath, map_location="cpu")
+            self.device = "cpu"
+        else:
+            pretrained_data = torch.load(filepath)
+            self.device = "cuda"
+
         self.policy_network.load_state_dict(pretrained_data)
 
     def select_action_policy(self, observation):

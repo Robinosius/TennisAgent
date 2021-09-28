@@ -1,7 +1,7 @@
 import gym
-import numpy as np
 from preprocessing import *
 from agent import *
+from playing_agent import *
 
 # load training data from files or create new ones
 def train_agent():
@@ -105,14 +105,19 @@ def train_agent():
 if __name__ == "__main__":
     # prepare environment
     env = gym.make("Tennis-v4")
-    obs = gym.reset()
+    obs = env.reset()
     height, width, channels = env.observation_space.shape
 
+    processor = Preprocessor(84)
+    agent = PlayingAgent(84, 84, channels, 10, "./tennis_agent_1000.pt")
+    _obs = processor.process(obs)
     done = False
     # play episode:
     while done != True:
-        env.step()
-
+        env.render()
+        action = agent.select_action_policy(_obs)
+        obs, reward, done, lives = env.step(action)
+        _obs = processor.process(obs)
 
     print(height, width, channels)
     num_actions = env.action_space.n
