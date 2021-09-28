@@ -33,6 +33,8 @@ max_steps = 100000 # maximum number of steps per episode
 episode_rewards = [] # list of rewards at end of all training episodes
 episode_lengths = []
 
+steps_total = 0
+
 for episode in range(num_episodes):
     # init sequence s = perception and preprocess
     obs = env.reset()
@@ -52,6 +54,8 @@ for episode in range(num_episodes):
 
         episode_reward += reward
 
+        # print(f"Chose action: {action}")
+
         # preprocess observation
         _new_obs = processor.process(obs)
 
@@ -62,10 +66,13 @@ for episode in range(num_episodes):
         agent.train()
         steps += 1
 
+    steps_total += steps
     episode_lengths.append(steps)
     episode_rewards.append(episode_reward)
 
-print("Done with training")
+    print(f"Episode {episode} length: {steps} reward: {episode_reward} step count: {steps_total}")
+
+print("Done with training.")
 
 model_save_name = 'tennis_agent.pt'
 path = F"{model_save_name}"
