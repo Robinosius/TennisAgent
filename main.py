@@ -1,9 +1,7 @@
 import gym
-
+import numpy as np
 from preprocessing import *
 from agent import *
-
-from torch import FloatTensor
 
 # load training data from files or create new ones
 
