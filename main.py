@@ -71,7 +71,7 @@ for episode in range(num_episodes):
         agent.train()
         steps += 1
         # update target network every n steps after the end of the episode
-        if steps_total % target_network_update == 0:
+        if (steps_total + steps) % target_network_update == 0:
             update = True
 
     if update:
