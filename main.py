@@ -65,18 +65,21 @@ for episode in range(num_episodes):
     episode_lengths.append(steps)
     episode_rewards.append(episode_reward)
 
+print("Done with training")
+
 model_save_name = 'tennis_agent.pt'
 path = F"{model_save_name}"
 agent.store_params(path)
 print(f"Saved training data to {path}")
 
 #save episode infos as csv
-with open('training_statistics', 'w') as file:
+stats_path = 'training_statistics.csv'
+with open(stats_path, 'w') as file:
     wr = csv.writer(file, quoting=csv.QUOTE_ALL)
     wr.writerow(episode_lengths)
     wr.writerow(episode_rewards)
 
-print("Done with training.")
+print(f"Saved training stats to {stats_path}")
 
 if __name__ == "__main__":
     # prepare environment
