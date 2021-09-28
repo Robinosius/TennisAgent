@@ -11,24 +11,26 @@ from torch import FloatTensor
 env = gym.make("Tennis-v4")
 height, width, num_channels = env.observation_space.shape
 
-num_actions = 7
+height, width, num_channels = env.observation_space.shape
+
+num_actions = 10
 buffer_size = 100000
 batch_size = 32
 learning_rate = 1e-4
-epsilon = 1
+initial_epsilon = 1
+final_epsilon = 0.1
+epsilon_decay = (initial_epsilon / final_epsilon) / 1000000
 discount_factor = 0.99
 
 # center crop processor
 processor = Preprocessor(84)
 
 agent = TennisAgent(84, 84, num_channels, num_actions, buffer_size, batch_size,
-                    learning_rate, epsilon, discount_factor)
+                    learning_rate, initial_epsilon, discount_factor, None, final_epsilon, epsilon_decay)
 
 # Training params:
-num_episodes = 1
-
-episode_count = 0
-max_steps = 100000 # maximum number of steps per episode
+num_episodes = 100
+max_steps = 10000000 # maximum number of steps per episode
 
 episode_rewards = [] # list of rewards at end of all training episodes
 episode_lengths = []
@@ -70,7 +72,8 @@ for episode in range(num_episodes):
     episode_lengths.append(steps)
     episode_rewards.append(episode_reward)
 
-    print(f"Episode {episode} length: {steps} reward: {episode_reward} step count: {steps_total}")
+    print(
+        f"Episode {episode} length: {steps} mean length: {np.mean(episode_lengths)} reward: {episode_reward} mean: {np.mean(episode_reward)} total step count: {steps_total}")
 
 print("Done with training.")
 

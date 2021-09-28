@@ -10,7 +10,8 @@ import csv
 class TennisAgent:
 
     def __init__(self, height, width, num_channels, num_actions, buffer_size, batch_size,
-                 learning_rate, epsilon, discount_factor, filepath=None):
+                 learning_rate, initial_epsilon, discount_factor, filepath=None, final_epsilon=None,
+                 epsilon_decay=None):
         super().__init__()
         self.random = random
         random.seed()
@@ -29,7 +30,9 @@ class TennisAgent:
 
         # params for learning and eps-greedy selection
         self.learning_rate = learning_rate
-        self.epsilon = epsilon
+        self.epsilon = initial_epsilon
+        self.final_epsilon = final_epsilon
+        self.epsilon_decay = epsilon_decay
         self.discount_factor = discount_factor
 
         # neural networks to utilize
@@ -83,6 +86,9 @@ class TennisAgent:
 
         batch = Transition(*zip(*batch))
 
+        actions = []
+        rewards = []
+
         actions = tuple((map(lambda a: torch.tensor([[a]], device=self.device), batch.action)))
         rewards = tuple((map(lambda r: torch.tensor([r], device=self.device), batch.reward)))
 
@@ -97,6 +103,7 @@ class TennisAgent:
         action_batch = torch.cat(actions)
         reward_batch = torch.cat(rewards)
         state_batch.type(torch.ByteTensor)
+
         state_action_values = self.policy_network(state_batch).gather(1, action_batch)
 
         next_state_values = torch.zeros(self.batch_size, device=self.device)
@@ -110,6 +117,11 @@ class TennisAgent:
         for param in self.policy_network.parameters():
             param.grad.data.clamp_(-1, 1)
         self.optimizer.step()
+
+        # decrease epsilon
+        if self.final_epsilon and self.epsilon > self.final_epsilon:
+            self.epsilon -= self.epsilon_decay
+
         return
 
     def store_params(self, filepath):
