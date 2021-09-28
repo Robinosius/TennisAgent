@@ -37,6 +37,7 @@ episode_lengths = []
 
 steps_total = 0
 
+# train for number of episodes (or max number of steps, as specified)
 for episode in range(num_episodes):
     # init sequence s = perception and preprocess
     obs = env.reset()
@@ -46,6 +47,8 @@ for episode in range(num_episodes):
 
     steps = 0
     done = False
+    update = False
+
     while not done and steps_total < max_steps:
         if (steps % 1000 == 0):
             print(f"Steps in episode: {steps}")
@@ -67,9 +70,11 @@ for episode in range(num_episodes):
         # train agent with random minibatch
         agent.train()
         steps += 1
+        # update target network every n steps after the end of the episode
+        if steps_total % target_network_update == 0:
+            update = True
 
-    # update target network every n steps
-    if steps_total % target_network_update == 0:
+    if update:
         agent.update_target_network()
 
     steps_total += steps
