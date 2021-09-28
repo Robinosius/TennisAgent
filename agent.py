@@ -12,7 +12,6 @@ class TennisAgent:
     def __init__(self, height, width, num_channels, num_actions, buffer_size, batch_size,
                  learning_rate, initial_epsilon, discount_factor, filepath=None, final_epsilon=None,
                  epsilon_decay=None):
-        super().__init__()
         self.random = random
         random.seed()
 
