@@ -28,22 +28,30 @@ agent = TennisAgent(84, 84, num_channels, num_actions, buffer_size, batch_size,
 num_episodes = 1
 
 episode_count = 0
-episode_steps = 1000000
+max_steps = 100000 # maximum number of steps per episode
+
+episode_rewards = [] # list of rewards at end of all training episodes
+episode_lengths = []
 
 for episode in range(num_episodes):
     # init sequence s = perception and preprocess
     obs = env.reset()
     _obs = processor.process(obs)
 
+    episode_reward = 0
+
     steps = 0
     done = False
-    while not done:
+    while not done and steps < max_steps:
         if (steps % 1000 == 0):
             print(f"Steps in episode: {steps}")
         # select action with epsilon greedy
         action = agent.eps_greedy_selection(_obs)
         # execute action on environment and get next state/observation
         new_obs, reward, done, lives = env.step(action)
+
+        episode_reward += reward
+
         # preprocess observation
         _new_obs = processor.process(obs)
 
@@ -51,11 +59,23 @@ for episode in range(num_episodes):
         agent.memorize(_obs, action, reward, _new_obs)
 
         # train agent with random minibatch
-        steps += 1
         agent.train()
         steps += 1
 
-agent.store_params("./test.pt")
+    episode_lengths.append(steps)
+    episode_rewards.append(episode_reward)
+
+model_save_name = 'tennis_agent.pt'
+path = F"{model_save_name}"
+agent.store_params(path)
+print(f"Saved training data to {path}")
+
+#save episode infos as csv
+with open('training_statistics', 'w') as file:
+    wr = csv.writer(file, quoting=csv.QUOTE_ALL)
+    wr.writerow(episode_lengths)
+    wr.writerow(episode_rewards)
+
 print("Done with training.")
 
 if __name__ == "__main__":
