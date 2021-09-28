@@ -48,7 +48,7 @@ class TennisAgent:
         self.target_network.load_state_dict(self.policy_network.state_dict())
 
         # optimizing
-        self.optimizer = optim.RMSprop(self.policy_network.parameters())
+        self.optimizer = optim.RMSprop(self.policy_network.parameters(), lr=learning_rate)
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     def eps_greedy_selection(self, observation):
@@ -123,6 +123,10 @@ class TennisAgent:
             self.epsilon -= self.epsilon_decay
 
         return
+
+    def update_target_network(self):
+        print("Updating target network.")
+        self.target_network.load_state_dict(self.policy_network.state_dict())
 
     def store_params(self, filepath):
         torch.save(self.policy_network.state_dict(), filepath)

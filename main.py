@@ -22,6 +22,8 @@ final_epsilon = 0.1
 epsilon_decay = (initial_epsilon / final_epsilon) / 1000000
 discount_factor = 0.99
 
+target_network_update = 10000
+
 # center crop processor
 processor = Preprocessor(84)
 
@@ -30,7 +32,7 @@ agent = TennisAgent(84, 84, num_channels, num_actions, buffer_size, batch_size,
 
 # Training params:
 num_episodes = 100
-max_steps = 10000000 # maximum number of steps per episode
+max_steps = 1000000 # maximum number of steps per episode
 
 episode_rewards = [] # list of rewards at end of all training episodes
 episode_lengths = []
@@ -46,7 +48,7 @@ for episode in range(num_episodes):
 
     steps = 0
     done = False
-    while not done and steps < max_steps:
+    while not done and steps_total < max_steps:
         if (steps % 1000 == 0):
             print(f"Steps in episode: {steps}")
         # select action with epsilon greedy
@@ -68,12 +70,16 @@ for episode in range(num_episodes):
         agent.train()
         steps += 1
 
+    # update target network every n steps
+    if steps_total % target_network_update == 0:
+        agent.update_target_network()
+
     steps_total += steps
     episode_lengths.append(steps)
     episode_rewards.append(episode_reward)
 
     print(
-        f"Episode {episode} length: {steps} mean length: {np.mean(episode_lengths)} reward: {episode_reward} mean: {np.mean(episode_reward)} total step count: {steps_total}")
+        f"Episode {episode} length: {steps} mean length: {np.mean(episode_lengths)} reward: {episode_reward} mean reward: {np.mean(episode_rewards)} total step count: {steps_total}")
 
 print("Done with training.")
 
