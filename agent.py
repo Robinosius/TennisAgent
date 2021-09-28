@@ -48,7 +48,6 @@ class TennisAgent:
         self.optimizer = optim.RMSprop(self.policy_network.parameters())
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-
     def eps_greedy_selection(self, observation):
         # get random number btw. 0 and 1
         choice = self.random.uniform(0, 1)
@@ -89,7 +88,7 @@ class TennisAgent:
 
         non_final_mask = torch.tensor(
             tuple(map(lambda s: s is not None, batch.next_state)),
-            device=self.device, dtype=torch.uint8)
+            device=self.device, dtype=torch.bool)
 
         non_final_next_states = torch.cat([s for s in batch.next_state
                                            if s is not None]).to(self.device)

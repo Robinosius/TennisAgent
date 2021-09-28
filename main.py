@@ -27,6 +27,9 @@ agent = TennisAgent(84, 84, num_channels, num_actions, buffer_size, batch_size,
 # Training params:
 num_episodes = 1
 
+episode_count = 0
+episode_steps = 1000000
+
 for episode in range(num_episodes):
     # init sequence s = perception and preprocess
     obs = env.reset()
@@ -35,7 +38,8 @@ for episode in range(num_episodes):
     steps = 0
     done = False
     while not done:
-        print(steps)
+        if (steps % 1000 == 0):
+            print(f"Steps in episode: {steps}")
         # select action with epsilon greedy
         action = agent.eps_greedy_selection(_obs)
         # execute action on environment and get next state/observation
