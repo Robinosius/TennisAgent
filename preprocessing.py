@@ -10,20 +10,22 @@ import torch
 
 
 class Preprocessor:
-    def __init__(self, size, to_grayscale=False, num_output_channels=1):
+    def __init__(self, size, device, to_grayscale=True):
         self.size = size
         self.to_grayscale = to_grayscale
-        self.num_output_channels = num_output_channels
+        self.device = device
 
         # transformer function for pil images
         if to_grayscale:
             self.transformer = T.Compose([
-                T.Grayscale(num_output_channels=self.num_output_channels),
-                T.Resize(size=(size, size), interpolation=1),
+                T.Grayscale(),
+                T.Resize(size=(size, size)),
+                # T.ToTensor()
             ])
         else:
             self.transformer = T.Compose([
-                T.CenterCrop(self.size),
+                T.Resize(size, size),
+                T.ToTensor()
             ])
 
     @staticmethod
@@ -35,8 +37,23 @@ class Preprocessor:
 
     def process(self, observation):
         # processes a pil image
-        cropped = self.transformer(self.to_pil(observation))
-        state = np.array(cropped)
-        state = state.transpose((2, 0, 1))
-        state = torch.from_numpy(state)
-        return state.unsqueeze(0).type(torch.FloatTensor)
+        # Convert to float, rescale, convert to tensor
+        observation = observation.transpose(2, 0, 1)
+        screen = np.ascontiguousarray(observation, dtype=np.float32) / 255
+        screen = torch.from_numpy(screen)
+
+        # screen cropping
+        bbox = [34, 0, 160, 160]
+        screen = screen[:, bbox[0]:bbox[2] + bbox[0], bbox[1]:bbox[3] + bbox[1]]
+
+        # Use torchvision package to compose image transforms
+        resize = T.Compose([
+            T.ToPILImage()
+            , T.Grayscale()
+            , T.Resize((84, 84))
+            , T.ToTensor()
+        ])
+
+        screen = self.transformer(screen)
+        screen = screen.unsqueeze(0)
+        return screen.to(self.device)

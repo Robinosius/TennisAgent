@@ -1,3 +1,5 @@
+import csv
+
 import gym
 import numpy as np
 from preprocessing import *
@@ -11,7 +13,7 @@ height, width, num_channels = env.observation_space.shape
 
 height, width, num_channels = env.observation_space.shape
 
-num_actions = 10
+num_actions = 6
 buffer_size = 100000
 batch_size = 32
 learning_rate = 1e-4
@@ -23,9 +25,9 @@ discount_factor = 0.99
 target_network_update = 10000
 
 # center crop processor
-processor = Preprocessor(84)
+processor = Preprocessor(84, device="cpu")
 
-agent = TennisAgent(84, 84, num_channels, num_actions, buffer_size, batch_size,
+agent = Agent(84, 84, num_channels, num_actions, buffer_size, batch_size,
                     learning_rate, initial_epsilon, discount_factor, None, final_epsilon, epsilon_decay)
 
 # Training params:
@@ -41,7 +43,19 @@ steps_total = 0
 for episode in range(num_episodes):
     # init sequence s = perception and preprocess
     obs = env.reset()
+
+    # process image
     _obs = processor.process(obs)
+
+    # frame stacking
+    frame_stack = []
+    # initialize stack with black screens
+    for i in range(4):
+        frame_stack.append(torch.zeros_like(_obs))
+
+    frame_stack.pop(0)
+    frame_stack.append(_obs)
+    state = torch.stack(frame_stack, dim=1).squeeze(2)
 
     episode_reward = 0
 
@@ -49,33 +63,41 @@ for episode in range(num_episodes):
     done = False
     update = False
 
-    while not done and steps_total < max_steps:
+    while not done:
         if (steps % 1000 == 0):
             print(f"Steps in episode: {steps}")
         # select action with epsilon greedy
-        action = agent.eps_greedy_selection(_obs)
+        action = agent.eps_greedy_selection(state)
         # execute action on environment and get next state/observation
         new_obs, reward, done, lives = env.step(action)
 
         episode_reward += reward
 
-        # print(f"Chose action: {action}")
-
-        # preprocess observation
+        # preprocess observation and update frame stack
         _new_obs = processor.process(obs)
+        frame_stack.pop(0)
+        frame_stack.append(_new_obs)
+        new_state = torch.stack(frame_stack, dim=1).squeeze(2)
 
         # store transition (converts reward to tensor as well)
-        agent.memorize(_obs, action, reward, _new_obs)
+        agent.memorize(state, action, reward, new_state)
 
         # train agent with random minibatch
-        agent.train()
+        # train agent with random minibatch
         steps += 1
+        steps_total += 1
+
+        if steps_total > training_precount:
+            agent.train()
+
         # update target network every n steps after the end of the episode
-        if steps_total % target_network_update == 0:
-            update = True
+        if steps_total%target_network_update == 0:
+            agent.update_target_network()
 
     if update:
         agent.update_target_network()
+
+    agent.update_eps()
 
     steps_total += steps
     episode_lengths.append(steps)
@@ -85,7 +107,6 @@ for episode in range(num_episodes):
         f"Episode {episode} length: {steps} mean length: {np.mean(episode_lengths)} reward: {episode_reward} mean reward: {np.mean(episode_rewards)} total step count: {steps_total}")
 
 print("Done with training.")
-
 model_save_name = 'tennis_agent.pt'
 path = F"{model_save_name}"
 agent.store_params(path)
@@ -94,7 +115,7 @@ print(f"Saved training data to {path}")
 #save episode infos as csv
 stats_path = 'training_statistics.csv'
 with open(stats_path, 'w') as file:
-    wr = csv.writer(file, quoting=csv.QUOTE_ALL)
+    wr = csv.writer(file, quoting=csv.QUOTE_NONE)
     wr.writerow(episode_lengths)
     wr.writerow(episode_rewards)
 

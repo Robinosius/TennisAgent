@@ -7,7 +7,7 @@ from torch import optim, FloatTensor, LongTensor
 import csv
 
 
-class TennisAgent:
+class Agent:
 
     def __init__(self, height, width, num_channels, num_actions, buffer_size, batch_size,
                  learning_rate, initial_epsilon, discount_factor, filepath=None, final_epsilon=None,
@@ -36,8 +36,8 @@ class TennisAgent:
         self.discount_factor = discount_factor
 
         # neural networks to utilize
-        self.policy_network = DQN(height, width, num_channels, num_actions)
-        self.target_network = DQN(height, width, num_channels, num_actions)
+        self.policy_network = DQN(num_actions)
+        self.target_network = DQN(num_actions)
 
         # load pretrained data if available
         if filepath:
@@ -61,11 +61,11 @@ class TennisAgent:
 
     def select_action_random(self):
         # randint includes both borders, num_actions should not be used as action space index
-        return torch.tensor([[random.randrange(self.num_actions)]], device=self.device, dtype=torch.long)
+        return torch.tensor([random.randrange(self.num_actions)], device=self.device, dtype=torch.long)
 
     def select_action_policy(self, observation):
         # select an action according to learned policy
-        return self.policy_network(observation.to(self.device)).max(1)[1].view(1, 1)
+        return self.policy_network(observation).argmax(dim=1).to(self.device)
 
     def memorize(self, state, action, reward, next_state):
         # stores the memory tuple
@@ -82,15 +82,13 @@ class TennisAgent:
         if len(self.replay_buffer) < self.batch_size:
             return
 
-        batch = self.sample()
+        _batch = self.sample()
 
-        batch = Transition(*zip(*batch))
-
-        actions = []
-        rewards = []
-
-        actions = tuple((map(lambda a: torch.tensor([[a]], device=self.device), batch.action)))
-        rewards = tuple((map(lambda r: torch.tensor([r], device=self.device), batch.reward)))
+        batch = Transition(*zip(*_batch))
+        states = torch.cat(batch.state)
+        actions = torch.cat(batch.action)
+        rewards = torch.cat(batch.reward)
+        next_states = torch.cat(batch.next_state)
 
         non_final_mask = torch.tensor(
             tuple(map(lambda s: s is not None, batch.next_state)),
@@ -99,18 +97,13 @@ class TennisAgent:
         non_final_next_states = torch.cat([s for s in batch.next_state
                                            if s is not None]).to(self.device)
 
-        state_batch = torch.cat(batch.state).to(self.device)
-        action_batch = torch.cat(actions)
-        reward_batch = torch.cat(rewards)
-        state_batch.type(torch.ByteTensor)
-
-        state_action_values = self.policy_network(state_batch).gather(1, action_batch)
+        q_values = self.policy_network(states).gather(dim=1, index=actions.unsqueeze(-1))
 
         next_state_values = torch.zeros(self.batch_size, device=self.device)
         next_state_values[non_final_mask] = self.target_network(non_final_next_states).max(1)[0].detach()
-        expected_state_action_values = (next_state_values * self.discount_factor) + reward_batch
+        expected_q_values = (next_state_values * self.discount_factor) + rewards
 
-        loss = F.smooth_l1_loss(state_action_values, expected_state_action_values.unsqueeze(1))
+        loss = F.smooth_l1_loss(q_values, expected_q_values.unsqueeze(1))
 
         self.optimizer.zero_grad()
         loss.backward()
